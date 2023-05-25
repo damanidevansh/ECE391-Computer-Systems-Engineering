@@ -1,0 +1,152 @@
+Name: Roshan Mahesh, Will Salazar, Devansh Damani
+
+Checkpoint 3.1
+Bug 1: Errors when using outb, cli, and sti. There appears to be an asm is undefined error.
+How it was fixed: Had to include lib.h file
+
+Bug 2: When loading up QEMU, our system would loop the booting up of the system, which made
+       us think there was an error with the GDT.
+How it was fixed: We realized that in kernel.c, we had to comment out the launch_tests()
+                  command on line 54. After we did that, we were sent to a page with a bunch
+                  of required addresses on the first try, which meant that our GDT was working.
+
+Bug 3: Very weird behavior when testing where the screen was flickering rapidly and the system would
+       loop the boot up again.
+How it was fixed: Had to edit how we did exception and interrupt handlers. For interrupt handlers, we
+                  forgot to push the flags and then pop them in the assembly linkage. For exception
+                  handlers, we tried using assembly linkage but it was completely broken so we used a new
+                  method for exception handlers that actually worked.
+
+Bug 4: When testing the IDT, the divide by 0 error worked but the IDT test didn't work. We kept getting
+       the 13th exception when trying the IDT test.
+How it was fixed: We were not setting the 15th entry's reserved bit to zero. We did not realize that even
+                  though it was reserved, we should have 
+
+Bug 5: When testing the paging functions, we kept getting an error that paging_init() was used multiple times.
+       Still haven't fixed this issue.
+How it was fixed: We named our .S file the same as our .c file, which is why we kept getting this error. Once we
+                  changed the name of our .S file, we weren't getting this error anymore.
+
+
+
+Checkpoint 3.2:
+Bug 1: Keyboard inputs were outputting a space after every outputted character
+How it was fixed: We realized that upon every key release, the keyboard would sent an irq to the function, which
+                  was just outputting a space. To get rid of that, we realized that we could have a scancode check
+                  case which checked whether the inputted scancode was in fact a number or letter press, or a Special
+                  key we use.
+
+Bug 2: Backspace was printing out music notes
+How it was fixed: Our implementation of backspace was a bit buggy, and we were not setting the cursor back at all, which
+                  we realized a lot later that we had to do. We were also outputting 'BACKSPACE' itself which for some
+                  reason was outputting a weird character. Instead, we outputted a NULL character and set the cursor back a
+                  space. We also replaced the keyboard buffer value with a blank space ' '.
+
+Bug 3: Enter was printing out a special, weird character
+How it was fixed: Similar to backspace, we realized that it was printing 'ERROR' out, which itself was also printing a special
+                  character, which was not recognized by the putc function. In this case, we created a statement which whenever
+                  enter was pressed, we putc a newline char '\n', which fixed it.
+
+Bug 4: Backspace broke when capslock and/or shift was on
+How it was fixed: We realized that we had implemented capslock and shift to only work when we were pressing letters and numbers-
+                  it also broke when we were pressing enter but didn't realize that either. We had a case where we added the if
+                  scanode was ENTER or CAPSLOCK, and it worked.
+
+Bug 5: inode_nums was wrong in read_data() for file system's init function, which caused read_data() to read the wrong inode_nums
+How it was fixed: Used the struct to access the inode_nums variable from the struct- which was the total number of inodes. We need
+                  to do similar implementations for the other variables in the struct, which is causing our file systems to break.
+
+Bug 6: terminal_write() was not writing anything when enter was pressed
+How it was fixed: We realized that we were outputting the keybaord buffer everytime enter was pressed- not remembering that the buffer
+                  being cleared every time we had a newline (to start a nerw buffer). To fix this, before we reset the buffer, we
+                  transferred the buffer to a tempkeyboard_buff array which stored the keyboard buffer. We then outputted that, which
+                  worked.
+
+
+
+
+Checkpoint 3.3:
+Bug 1: Kept having a file directory error when testing "ls" after the verylargetextwithverylongname.txt file.
+How it was fixed: Had to include a check in dir_read in file_systems.c to check if the num_bytes was greater than 32.
+                  If it was, then we set the return value to 32. This is because we can't return a value greater than 32.
+
+Bug 2: Whenever we kept testing execute, we were first triple faulting, then page faulting, then general protection faulting.
+How it was fixed: This was fixed by setting all the necessary paging fields such as present, global_bit, page_size, and others.
+                  Our code originally only set the base address. The other error that we were making was we weren't setting IRET
+                  conents to the stack properly. We had to completely redo the code for this by pushing ebx, edx, flags, eax, and ecx.
+
+Bug 3: We were page faulting every time we tried to halt a running function
+How it was fixed: This was fixed by moving our inline assembly code into a loop we'd had handling the case when our pid was zero.
+                  We were page faulting because our function was not able to access the required assembly for when pid was zero,
+                  which happens when we're at the end of our function. Upon fixing that, our halt worked fine.
+
+Bug 4: The buffer that we are using in terminal_read and terminal_write was only being set to a maximum of 4 characters. As a result,
+       commands that are longer than 4 characters long wouldn't work, but commands that are 4 characters long or less would work.
+How it was fixed: We realized that we were only returning the size of the buffer rather than the counter that held the number of letters
+                  that were typed in our terminal_read function. Once we fixed this, all the commands worked.
+
+
+
+Checkpoint 3.4:
+Bug 1: Video Memory was rebooting the kernel when I called fish
+How it was fixed: We realized that we were writing to the wrong memory location when we initialized the video memory paging page table entry,
+                  which obviously was making it access illegal memory and causing a page fault and hence a bootloop. This actually helped us
+                  fix another issue we were having with halt(256), as we were only passing in an 8-bit status into halt- which rendered all of
+                  our squashing exception handlers to fail and hence bootloop. Once these two issues were fixed (we had just calculated the 
+                  video memory wrong), our fish and pingpong worked.
+
+Bug 2: Syserr was failing with trying to close unopened or invalid fds
+How it was fixed: I realized that I had set up my NULL checks wrong. I was returning -1 when a file was open which was constantly causing
+                  the function to return -1 and fail, which was making the syserr test case break. When I fixed the NULL check, I got the
+                  test case to pass.
+
+Bug 3: Syserr was failing with trying to read unopened or invalid fds
+How it was fixed: We realized that in our syscall open, we were constantly returning -1 as we were accidentally checking the flag when the page was
+                  closed (which it always was), so it was never actually opening the file and somehow causing syscall read to fail. We were also not
+                  setting the flag to indicate that it was open correctly in execute, which also did not help our case at all. Once we fixed those,
+                  our syserr tests passed and we were able to fail out of reading unopened/invalid file descriptors.
+
+Bug 4: Fish was not executing once called. It was stuck on a frame
+How it was fixed: Upon GDBing through the fish execution, we actually saw that fish WAS executing, it was just ridiculously fast. So then we realized
+                  that this was an RTC mistake. With the help of a CA, we virtualized our RTC and realised that we were not setting our RTC to a certain
+                  frequency when initializing it- which apparently caused it to default to the computer RTC and made it execute incredibly fast. Once
+                  these issues were fixed, Mr. Fishy worked properly and we relived the trauma of MP1.
+
+Bug 5: Pingpong was page faulting once it hit the last line of the screen and output jagged stuff
+How it was fixed: There were a couple issues with pingpong- with us realizing that we had to practically rewrie half of our putc function because we saw
+                  that there were two if statements that clashed with each other once you were at the end of the screen (when screen_y was 24). We also
+                  somehow forgot that screen_y was zero-indexed, so we were using 25 as our max screen_y value instead of 24. Once we fixed that, we had
+                  pingpong work fine except that it page faulted once we tried to press a key on the keyboard. To fix this, we forced screen_y to never
+                  go above 24, and that fixed pingpong.
+
+Bug 6: Pressing the alt key somehow worked as a backspace and deleted the 391OS> thing.
+How it was fixed: Since we don't need alt implemetation for this checkpoint, we added an if statement checking to see whether the scancode was either of
+                  the alt keys. If it was, we just returned out of our keyboard_irq_handler function, which fixed this bug for now.
+
+Bug 7: Hello didn't print with a newline. It outputted Hello, (name)391OS>
+How it was fixed: We were not properly including the new line character in our retval when returning from terminal read. Had to increase the return value
+                  by 1 to include the newline character.
+
+Bug 8: cat RTC didn't wait a bit before reprinting 391OS>. It instantly reprinted it.
+How it was fixed: We were having an issue with setting our rtc_flags in our init and rtc_write functions. Once we changed that, and manually reset the
+                  rtc's frequency to 2Hz when closing it, it worked.
+
+
+
+Checkpoint 3.5:
+Bug 1: Switching between the 3 terminals always sets screen_x and screen_y back to (0, 0).
+How it was fixed: Needed to have a variable in the terminals struct that kept track of screen_x and screen_y values. 
+
+Bug 2: The terminal wouldn't scroll when trying the "cat ." command at the end of the terminal.
+How it was fixed: We took the logic from scrolling when we press enter, and just pasted that code for this case. The problem was then fixed. 
+
+Bug 3: Switching to the 2nd and 3rd terminal wouldn't execute a new shell.
+How it was fixed: Needed to have a counter to check if we switched to that terminal for the first time.
+  
+Bug 4: Running fish or pingpong on the 3rd terminal and then switching to the 2nd or 1st terminal results in fish or pingpong still executing in the
+       new terminal.
+How it was fixed: Needed to set the esp and ebp values correctly based on which pid and which terminal we are on. 
+
+Bug 5: Switching to the 2nd or 3rd terminal would result in a page fault.
+How it was fixed: We needed to set up 4k page tables in our paging for each terminal. This was done with the terminal_memory function in paging.
+
