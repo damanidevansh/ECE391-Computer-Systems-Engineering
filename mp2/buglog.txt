@@ -1,0 +1,204 @@
+<=========================================================>
+<=================>    BUG LOG HEADER   <=================>
+<=========================================================>
+Assignment:
+    MP2
+CheckPoint:
+    CP1
+CreateTime:
+    2022.02.23
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+    2022.02.23.
+Creator:
+    Devansh Damani
+Description:
+    The function draw_vert_line drew werid horizontal and vertical lines when
+    moving across the screen. When the sprite moved towards the left, it drew
+    gray vertical lines across the screen and when the sprite moved right, it
+    drew gray horizontal lines across the screen.
+Solution:
+    My error was in my draw_vert_line function, where I had a few fixes to make.
+    At first, I realized that my understanding of the draw_horiz_line function
+    was wrong. The calculation for the starting address was something I failed
+    to fully grasp at first. I accidentally switched the values of x and y when
+    replicating the code for draw_vert_line, which I fixed after re-reading the
+    code and discussing that line with a TA. I also had an issue with my for loop
+    when copying the image data into appropriate planes in the buffer. There too,
+    I failed to realize  the nested if statement only applied to draw_horiz_line
+    so I got rid of it.
+
+
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+    2022.02.24.
+Creator:
+    Devansh Damani
+Description:
+    About 50% of the times I pressed ` to exit out of the game, Devel would crash
+    on me. The screen would go black and wouldn't let me ctrl+z or ctrl+c out of it.
+    My only option was to X out of it and restart Devel.
+Solution:
+    I asked a CA and they first helped me check for memory errors that could cause
+    issues. We could not find any. We then tried reverting the register values back
+    to those from the initial Git release, after which we incrementally changed them
+    while testing whether Devel would still crash or not. It did not crash again, and
+    I am still unsure what was causing the original issue. My guess is I accidentally
+    edited the wrong register which could have been causing memory issues.
+    
+   
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    2022.02.24.
+Creator:
+    Devansh Damani
+Description:
+    As soon as the sprite would reach the bottom of the screen, instead of it reaching the
+    edge of the maze, it would go into the status bar and disappear until I moved it back up.
+Solution:
+    I realized that this may be caused because I forgot to change IMAGE_Y_DIM- the macro that 
+    defines the height of the screen that shows the maze. When we added the status bar, we also
+    changed the height of the screen that shows the maze by as many pixels as the size of the status
+    bar, so 18 pixels. What was happening to my sprite was that the maze was still rendering beneath
+    the status bar and was accessible to the sprite. I could not see it because those pixels were all
+    rewritten to black. So, I redefined IMAGE_Y_DIM to be (200-18) in the modex.h file.
+
+
+
+<--------------------------------------------------------->
+                          BUG 4                          
+<--------------------------------------------------------->
+Time:
+    2022.02.24.
+Creator:
+    Devansh Damani
+Description:
+    When I was working on masking, there was an output where not only would the path of the sprite not
+    be masked, there was a thick black diagonal line appearing across the screen which was drawn whenever
+    I tried to move the sprite.
+Solution:
+    My error was a trivial one, as I made a typo when trying to call draw_full_block after my masking 
+    function. In one of the instances, instead of a play_x and a play_y, I was passing in play_x and
+    play_x agai instead of play_y. Fixing this one letter lead to not only the diagonal line disappearing
+    but also caused the masking function to wholly work.
+
+
+
+<--------------------------------------------------------->
+                          BUG 5                          
+<--------------------------------------------------------->
+Time:
+    2022.02.26.
+Creator:
+    Devansh Damani
+Description:
+    When I was trying to add text to my status bar, I was able to successfully see my background color but
+    my text was not outputting correctly. Instead of seeing letters and words, I was seeing blobs of weird
+    rectangles in my status bar. The silver lining though was that those rectangles were the color I had coded
+    in, so at least I knew that my coloring was correct
+Solution:
+    This too was a very trivial problem. When right shifting my mask in my text_to_graphics function, instead
+    of mask = mask >> 1, I had written mask >>1 mask. Once I fixed that, the correct text was outputted.
+
+
+
+<--------------------------------------------------------->
+                          BUG 6                          
+<--------------------------------------------------------->
+Time:
+    2022.??.26.
+Creator:
+    Devansh Damani
+Description:
+    When I was initially trying to obtain the starting times of the function, I was crashing devel every time
+    I would run the mazegame. It would freeze and was unable to even render the game, which caused me to X out
+    of it every time.
+Solution:
+    I am still a little unsure what was actually causing my bug. Since it was not during someone's Office Hours,
+    I was unable to ask for help but regardless, I ended up deleting all my time-related code and restarting, and
+    this time, it worked. what I think could have been the issue, however, is the fact that I misunderstood the time
+    data type. Instead of using a time_t data type, I was directly using integers which I think may have crashed the
+    code, but I am not sure. When I changed all my variable types to time_t, the function worked fine.
+
+
+
+<--------------------------------------------------------->
+                          BUG 7                          
+<--------------------------------------------------------->
+Time:
+    2022.02.24.
+Creator:
+    Devansh Damani
+Description:
+    This is the fruit edge-case bug- where when a fruit is present on an edge which stops the sprite from moving
+    (such as a corner or a wall when you come perpendicularly into it), the sprite is unable to pick up the fruit
+    upon first contact, but only picks it up when it moves again. This did not occur too much, but it did happen
+    enough times for it to be a noticable effect.
+Solution:
+    In mazegame.c's *rtc_thread function, getting rid of the need_redraw loop worked in fixing that. What I think
+    was causing it was that while the loop helped with efficiency, it redrew the fruit onto the position of the
+    sprite when it got onto it, which then seemed like the fruit was still under it- only finally getting erased
+    when the sprite would move elsewhere.
+
+
+<=========================================================>
+<=================>    BUG LOG HEADER   <=================>
+<=========================================================>
+Assignment:
+    MP2
+CheckPoint:
+    CP2
+CreateTime:
+    2022.03.02
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+    2022.03.02.
+Creator:
+    Devansh Damani
+Description:
+    When I was trying to figure out how to change the wall's colours and when I was initializing my palette function,
+    I was having an issue where my game's fog was changing colour instead of the walls or boundaries.
+Solution:
+    It turns out that my implementation of my palette function was a little messy. In order to work around this, I changed
+    up my logic, where I copied the entire RGB palette over and manuall fed in inputs to change it. I also realized that I
+    was PUTSing the wrong number of colours to output.
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+    2022.02.04
+Creator:
+    Devansh Damani
+Description:
+    When I was implementing my draw_transparent_block function, I had an issue when even though I had unit tested my masking
+    and redrawing function, I was having an issue where the block was drawing a black streak all over the screen- similar to
+    the issue we had to fix in MP2.1.
+Solution:
+    I did not realize I had to call my overall masking function first to save the old image in a buffer before calling my draw_transparent_block
+    function. Once I did this, the function worked properly.
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    2022.02.05.
+Creator:
+    Devansh Damani
+Description:
+    WHenever I was running su -c ./mazegame, my entire system would freeze and deadlock where I was not able to do anythingafter
+Solution:
+    I realized that in my tux_thread function, I had a lock which I was never unlocking, which was causing the entire system to crash.
+    
